@@ -112,50 +112,51 @@ module IndexingMsg
         var gIV: borrowed GenSymEntry = st.lookup(iname);
         if (gIV == nil) {return unknownSymbolError(pn,iname);}
 
-        /* proc ivInt64Helper(type XType) { */
-        /*     var e = toSymEntry(gX,XType); */
-        /*     var iv = toSymEntry(gIV,int); */
-        /*     var ivMin = min reduce iv.a; */
-        /*     var ivMax = max reduce iv.a; */
-        /*     if ivMin < 0 {return try! "Error: %s: OOBindex %i < 0".format(pn,ivMin);} */
-        /*     if ivMax >= e.size {return try! "Error: %s: OOBindex %i > %i".format(pn,ivMin,e.size-1);} */
-        /*     var a: [iv.aD] XType; */
-        /*     //[i in iv.aD] a[i] = e.a[iv.a[i]]; // bounds check iv[i] against e.aD? */
-        /*     ref a2 = e.a; */
-        /*     ref iva = iv.a; */
-        /*     [(a1,idx) in zip(a,iva)] unorderedCopy(a1,a2[idx]); // bounds check iv[i] against e.aD? */
-        /*     st.addEntry(rname, new shared SymEntry(a)); */
-        /* } */
+        proc ivInt64Helper(type XType) {
+            var e = toSymEntry(gX,XType);
+            var iv = toSymEntry(gIV,int);
+            var ivMin = min reduce iv.a;
+            var ivMax = max reduce iv.a;
+            if ivMin < 0 {return try! "Error: %s: OOBindex %i < 0".format(pn,ivMin);}
+            if ivMax >= e.size {return try! "Error: %s: OOBindex %i > %i".format(pn,ivMin,e.size-1);}
+            var a: [iv.aD] XType;
+            //[i in iv.aD] a[i] = e.a[iv.a[i]]; // bounds check iv[i] against e.aD?
+            ref a2 = e.a;
+            ref iva = iv.a;
+            [(a1,idx) in zip(a,iva)] unorderedCopy(a1,a2[idx]); // bounds check iv[i] against e.aD?
+            st.addEntry(rname, new shared SymEntry(a));
+        }
         
-        /* proc ivBoolHelper(type XType) { */
-        /*     var e = toSymEntry(gX,XType); */
-        /*     var truth = toSymEntry(gIV,bool); */
-        /*     var iv: [truth.aD] int = (+ scan truth.a); */
-        /*     var pop = iv[iv.size-1]; */
-        /*     if v {writeln("pop = ",pop,"last-scan = ",iv[iv.size-1]);try! stdout.flush();} */
-        /*     var a = makeDistArray(pop, XType); */
-        /*     //[i in e.aD] if (truth.a[i] == true) {a[iv[i]-1] = e.a[i];}// iv[i]-1 for zero base index */
-        /*     ref ead = e.aD; */
-        /*     ref ea = e.a; */
-        /*     ref trutha = truth.a; */
-        /*     [i in ead] if (trutha[i] == true) {unorderedCopy(a[iv[i]-1], ea[i]);}// iv[i]-1 for zero base index */
-        /*     st.addEntry(rname, new shared SymEntry(a)); */
-        /* } */
+        proc ivBoolHelper(type XType) {
+            var e = toSymEntry(gX,XType);
+            var truth = toSymEntry(gIV,bool);
+            var iv: [truth.aD] int = (+ scan truth.a);
+            var pop = iv[iv.size-1];
+            if v {writeln("pop = ",pop,"last-scan = ",iv[iv.size-1]);try! stdout.flush();}
+            var a = makeDistArray(pop, XType);
+            //[i in e.aD] if (truth.a[i] == true) {a[iv[i]-1] = e.a[i];}// iv[i]-1 for zero base index
+            ref ead = e.aD;
+            ref ea = e.a;
+            ref trutha = truth.a;
+            [i in ead] if (trutha[i] == true) {unorderedCopy(a[iv[i]-1], ea[i]);}// iv[i]-1 for zero base index
+            st.addEntry(rname, new shared SymEntry(a));
+        }
         
         select(gX.dtype, gIV.dtype) {
             when (DType.Int64, DType.Int64) {
-                var e = toSymEntry(gX,int);
-                var iv = toSymEntry(gIV,int);
-                var ivMin = min reduce iv.a;
-                var ivMax = max reduce iv.a;
-                if ivMin < 0 {return try! "Error: %s: OOBindex %i < 0".format(pn,ivMin);}
-                if ivMax >= e.size {return try! "Error: %s: OOBindex %i > %i".format(pn,ivMax,e.size-1);}
-                var a: [iv.aD] int;
-                //[i in iv.aD] a[i] = e.a[iv.a[i]]; // bounds check iv[i] against e.aD?
-                ref a2 = e.a;
-                ref iva = iv.a;
-                [(a1,idx) in zip(a,iva)] unorderedCopy(a1,a2[idx]); // bounds check iv[i] against e.aD?
-                st.addEntry(rname, new shared SymEntry(a));
+                /* var e = toSymEntry(gX,int); */
+                /* var iv = toSymEntry(gIV,int); */
+                /* var ivMin = min reduce iv.a; */
+                /* var ivMax = max reduce iv.a; */
+                /* if ivMin < 0 {return try! "Error: %s: OOBindex %i < 0".format(pn,ivMin);} */
+                /* if ivMax >= e.size {return try! "Error: %s: OOBindex %i > %i".format(pn,ivMax,e.size-1);} */
+                /* var a: [iv.aD] int; */
+                /* //[i in iv.aD] a[i] = e.a[iv.a[i]]; // bounds check iv[i] against e.aD? */
+                /* ref a2 = e.a; */
+                /* ref iva = iv.a; */
+                /* [(a1,idx) in zip(a,iva)] unorderedCopy(a1,a2[idx]); // bounds check iv[i] against e.aD? */
+                /* st.addEntry(rname, new shared SymEntry(a)); */
+                ivInt64Helper(int);
             }
             when (DType.Int64, DType.Bool) {
                 var e = toSymEntry(gX,int);
