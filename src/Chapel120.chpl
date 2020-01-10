@@ -13,14 +13,18 @@ module Chapel120 {
   use ZMQ;
   use IO;
 
-  /*inline proc isZMQSerializable(type T) param: bool where version120 && isBytes(T) {*/
-    /*return true;*/
-  /*}*/
+  /* My initial attempt was this. But couldn't hijack isZMQSerializable
 
-  /*proc Socket.recv(type T) where version120 && isBytes(T)  {*/
-    /*// there is no validation in 1.20, so use string for ZMQ but return bytes*/
-    /*return this.recv(string):bytes;*/
-  /*}*/
+  inline proc isZMQSerializable(type T) param: bool where version120 && isBytes(T) {
+    return true;
+  }
+
+  proc Socket.recv(type T) where version120 && isBytes(T)  {
+    // there is no validation in 1.20, so use string for ZMQ but return bytes
+    return this.recv(string):bytes;
+  }
+
+  */
 
   proc Socket.recvMessage(type T) throws {
     if version120 && isBytes(T) {
