@@ -8,7 +8,7 @@ module Chapel120 {
   // version number directly to avoid needing this param and the
   // last resort overload below...  See Chapel issue #5491.
   //
-  config param version120 = true;
+  config param version120 = false;
   
   use ZMQ;
   use IO;
