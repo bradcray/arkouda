@@ -15,6 +15,8 @@ use GenSymIO;
 use SymArrayDmap;
 use ServerErrorStrings;
 
+use Chapel120; // the compatibility layer
+
 
 proc main() {
     writeln("arkouda server version = ",arkoudaVersion); try! stdout.flush();
@@ -52,12 +54,13 @@ proc main() {
           }
           try! stdout.flush();
         }
-        socket.send(repMsg);
+        socket.sendMessage(repMsg);
     }
 
     while !shutdownServer {
         // receive requests
-        var reqMsgRaw = socket.recv(bytes);
+
+        var reqMsgRaw = socket.recvMessage(bytes);
 
         reqCount += 1;
 
