@@ -51,7 +51,7 @@ module SipHash {
   
   proc sipHash64(msg: [] uint(8), k: [?kD] uint(8)): uint(64) throws {
     var res = computeSipHash(msg, k, 8);
-    return res[1];
+    return res[0];
   }
 
   proc sipHash128(msg: [] uint(8), k: [?kD] uint(8)): 2*uint(64) throws {
@@ -169,7 +169,7 @@ module SipHash {
 
     b = v0 ^ v1 ^ v2 ^ v3;
     var res: 2*uint(64);
-    res[1] = byte_reverse(b);
+    res[0] = byte_reverse(b);
 
     if (outlen == 8) {
         return res;
@@ -183,7 +183,7 @@ module SipHash {
     }
     
     b = v0 ^ v1 ^ v2 ^ v3;
-    res[2] = byte_reverse(b);
+    res[1] = byte_reverse(b);
 
     return res;
   }
