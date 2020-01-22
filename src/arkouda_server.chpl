@@ -75,7 +75,7 @@ proc main() {
         }
 
         const fieldsRaw = reqMsgRaw.split(1);
-        const cmdRaw = fieldsRaw[1];
+        const cmdRaw = fieldsRaw[0];
         var repMsg: string;
         var s0 = t1.elapsed();
         // parse requests, execute requests, format responses
@@ -102,7 +102,7 @@ proc main() {
                 if v { writeln("reqMsg: ", reqMsg); }
 
                 const fields = reqMsg.split(1);
-                const cmd = fields[1];
+                const cmd = fields[0];
 
                 // now take care of the case where we send arbitrary data:
                 if cmd == "tondarray" {

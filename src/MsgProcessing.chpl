@@ -41,9 +41,9 @@ module MsgProcessing
     proc createMsg(reqMsg: string, st: borrowed SymTab): string throws {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var dtype = str2dtype(fields[2]);
-        var size = try! fields[3]:int;
+        var cmd = fields[0];
+        var dtype = str2dtype(fields[1]);
+        var size = try! fields[2]:int;
 
         // get next symbol name
         var rname = st.nextName();
@@ -70,8 +70,8 @@ module MsgProcessing
     proc deleteMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
+        var cmd = fields[0];
+        var name = fields[1];
         if v {try! writeln("%s %s".format(cmd,name));try! stdout.flush();}
         // delete entry from symbol table
         st.deleteEntry(name);
@@ -93,8 +93,8 @@ module MsgProcessing
     proc infoMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
+        var cmd = fields[0];
+        var name = fields[1];
         if v {try! writeln("%s %s".format(cmd,name));try! stdout.flush();}
         // if name == "__AllSymbols__" passes back info on all symbols
         return st.info(name);
@@ -114,7 +114,7 @@ module MsgProcessing
     proc getconfigMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
+        var cmd = fields[0];
         if v {try! writeln("%s".format(cmd));try! stdout.flush();}
         return getConfig();
     }
@@ -133,7 +133,7 @@ module MsgProcessing
     proc getmemusedMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
+        var cmd = fields[0];
         if v {try! writeln("%s".format(cmd));try! stdout.flush();}
         return st.memUsed():string;
     }
@@ -152,9 +152,9 @@ module MsgProcessing
     proc strMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var printThresh = try! fields[3]:int;
+        var cmd = fields[0];
+        var name = fields[1];
+        var printThresh = try! fields[2]:int;
         if v {try! writeln("%s %s %i".format(cmd,name,printThresh));try! stdout.flush();}
         return st.datastr(name,printThresh);
     }
@@ -173,9 +173,9 @@ module MsgProcessing
     proc reprMsg(reqMsg: string, st: borrowed SymTab): string {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var printThresh = try! fields[3]:int;
+        var cmd = fields[0];
+        var name = fields[1];
+        var printThresh = try! fields[2]:int;
         if v {try! writeln("%s %s %i".format(cmd,name,printThresh));try! stdout.flush();}
         return st.datarepr(name,printThresh);
     }
@@ -195,10 +195,10 @@ module MsgProcessing
     proc arangeMsg(reqMsg: string, st: borrowed SymTab): string throws {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var start = try! fields[2]:int;
-        var stop = try! fields[3]:int;
-        var stride = try! fields[4]:int;
+        var cmd = fields[0];
+        var start = try! fields[1]:int;
+        var stop = try! fields[2]:int;
+        var stride = try! fields[3]:int;
         // compute length
         var len = (stop - start + stride - 1) / stride;
         // get next symbol name
@@ -234,10 +234,10 @@ module MsgProcessing
     proc linspaceMsg(reqMsg: string, st: borrowed SymTab): string throws {
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var start = try! fields[2]:real;
-        var stop = try! fields[3]:real;
-        var len = try! fields[4]:int;
+        var cmd = fields[0];
+        var start = try! fields[1]:real;
+        var stop = try! fields[2]:real;
+        var len = try! fields[3]:int;
         // compute stride
         var stride = (stop - start) / (len-1);
         // get next symbol name
@@ -277,10 +277,10 @@ module MsgProcessing
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var dtype = str2dtype(fields[3]);
-        var value = fields[4];
+        var cmd = fields[0];
+        var name = fields[1];
+        var dtype = str2dtype(fields[2]);
+        var value = fields[3];
 
         var gEnt: borrowed GenSymEntry = st.lookup(name);
 

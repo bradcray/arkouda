@@ -10,13 +10,13 @@ module SegmentedMsg {
     var pn = Reflection.getRoutineName();
     var repMsg: string;
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var subcmd = fields[2];
-    var objtype = fields[3];
-    var segName = fields[4];
-    var valName = fields[5];
-    var valtype = fields[6];
-    var val = fields[7];
+    var cmd = fields[0];
+    var subcmd = fields[1];
+    var objtype = fields[2];
+    var segName = fields[3];
+    var valName = fields[4];
+    var valtype = fields[5];
+    var val = fields[6];
     var rname = st.nextName();
     select (objtype, valtype) {
     when ("str", "str") {
@@ -46,10 +46,10 @@ module SegmentedMsg {
     var pn = Reflection.getRoutineName();
     var repMsg: string;
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var subcmd = fields[2]; // type of indexing to perform
-    var objtype = fields[3]; // what kind of segmented array
-    var args: [1..#(fields.size-3)] string = fields[4..]; // parsed by subroutines
+    var cmd = fields[0];
+    var subcmd = fields[1]; // type of indexing to perform
+    var objtype = fields[2]; // what kind of segmented array
+    var args: [1..#(fields.size-3)] string = fields[3..]; // parsed by subroutines
     try {
       select subcmd {
         when "intIndex" {
@@ -180,16 +180,16 @@ module SegmentedMsg {
     var pn = Reflection.getRoutineName();
     var repMsg: string;
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var op = fields[2];
+    var cmd = fields[0];
+    var op = fields[1];
     // Type and attrib names of left segmented array
-    var ltype = fields[3];   
-    var lsegName = fields[4];
-    var lvalName = fields[5];
+    var ltype = fields[2];   
+    var lsegName = fields[3];
+    var lvalName = fields[4];
     // Type and attrib names of right segmented array 
-    var rtype = fields[6];
-    var rsegName = fields[7];
-    var rvalName = fields[8];
+    var rtype = fields[5];
+    var rsegName = fields[6];
+    var rvalName = fields[7];
     var rname = st.nextName();
     select (ltype, rtype) {
     when ("str", "str") {
@@ -216,13 +216,13 @@ module SegmentedMsg {
     var pn = Reflection.getRoutineName();
     var repMsg: string;
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var op = fields[2];
-    var objtype = fields[3];
-    var segName = fields[4];
-    var valName = fields[5];
-    var valtype = fields[6];
-    var value = fields[7];
+    var cmd = fields[0];
+    var op = fields[1];
+    var objtype = fields[2];
+    var segName = fields[3];
+    var valName = fields[4];
+    var valtype = fields[5];
+    var value = fields[6];
     var rname = st.nextName();
     select (objtype, valtype) {
     when ("str", "str") {
@@ -248,17 +248,17 @@ module SegmentedMsg {
     var pn = Reflection.getRoutineName();
     var repMsg: string;
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var mainObjtype = fields[2];
-    var mainSegName = fields[3];
-    var mainValName = fields[4];
-    var testObjtype = fields[5];
-    var testSegName = fields[6];
-    var testValName = fields[7];
+    var cmd = fields[0];
+    var mainObjtype = fields[1];
+    var mainSegName = fields[2];
+    var mainValName = fields[3];
+    var testObjtype = fields[4];
+    var testSegName = fields[5];
+    var testValName = fields[6];
     var invert: bool;
-    if fields[8] == "True" {invert = true;}
-    else if fields[8] == "False" {invert = false;}
-    else {return "Error: Invalid argument in %s: %s (expected True or False)".format(pn, fields[8]);}
+    if fields[7] == "True" {invert = true;}
+    else if fields[7] == "False" {invert = false;}
+    else {return "Error: Invalid argument in %s: %s (expected True or False)".format(pn, fields[7]);}
     
     var rname = st.nextName();
     select (mainObjtype, testObjtype) {
@@ -280,10 +280,10 @@ module SegmentedMsg {
   proc segGroupMsg(reqMsg: string, st: borrowed SymTab): string throws {
     var pn = Reflection.getRoutineName();
     var fields = reqMsg.split();
-    var cmd = fields[1];
-    var objtype = fields[2];
-    var segName = fields[3];
-    var valName = fields[4];
+    var cmd = fields[0];
+    var objtype = fields[1];
+    var segName = fields[2];
+    var valName = fields[3];
     var rname = st.nextName();
     select (objtype) {
     when "str" {

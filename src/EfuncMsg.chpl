@@ -33,9 +33,9 @@ module EfuncMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var efunc = fields[2];
-        var name = fields[3];
+        var cmd = fields[0];
+        var efunc = fields[1];
+        var name = fields[2];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s : %s".format(cmd,efunc,name,rname));try! stdout.flush();}
 
@@ -152,11 +152,11 @@ module EfuncMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var efunc = fields[2];
-        var name1 = fields[3];
-        var name2 = fields[4];
-        var name3 = fields[5];
+        var cmd = fields[0];
+        var efunc = fields[1];
+        var name1 = fields[2];
+        var name2 = fields[3];
+        var name3 = fields[4];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s %s : %s".format(cmd,efunc,name1,name2,name3,rname));try! stdout.flush();}
 
@@ -224,12 +224,12 @@ module EfuncMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var efunc = fields[2];
-        var name1 = fields[3];
-        var name2 = fields[4];
-        var dtype = str2dtype(fields[5]);
-        var value = fields[6];
+        var cmd = fields[0];
+        var efunc = fields[1];
+        var name1 = fields[2];
+        var name2 = fields[3];
+        var dtype = str2dtype(fields[4]);
+        var value = fields[5];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s %s %s : %s".format(cmd,efunc,name1,name2,dtype,value,rname));try! stdout.flush();}
 
@@ -296,12 +296,12 @@ module EfuncMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var efunc = fields[2];
-        var name1 = fields[3];
-        var dtype = str2dtype(fields[4]);
-        var value = fields[5];
-        var name2 = fields[6];
+        var cmd = fields[0];
+        var efunc = fields[1];
+        var name1 = fields[2];
+        var dtype = str2dtype(fields[3]);
+        var value = fields[4];
+        var name2 = fields[5];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s %s %s : %s".format(cmd,efunc,name1,dtype,value,name2,rname));try! stdout.flush();}
 
@@ -368,13 +368,13 @@ module EfuncMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var efunc = fields[2];
-        var name1 = fields[3];
-        var dtype1 = str2dtype(fields[4]);
-        var value1 = fields[5];
-        var dtype2 = str2dtype(fields[6]);
-        var value2 = fields[7];
+        var cmd = fields[0];
+        var efunc = fields[1];
+        var name1 = fields[2];
+        var dtype1 = str2dtype(fields[3]);
+        var value1 = fields[4];
+        var dtype2 = str2dtype(fields[5]);
+        var value2 = fields[6];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s %s %s %s : %s".format(cmd,efunc,name1,dtype1,value1,dtype2,value2,rname));try! stdout.flush();}
 

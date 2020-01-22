@@ -19,9 +19,9 @@ module ConcatenateMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string;
         var fields = reqMsg.split();
-        var cmd = fields[1];
-        var n = try! fields[2]:int; // number of arrays to sort
-        var names = fields[3..];
+        var cmd = fields[0];
+        var n = try! fields[1]:int; // number of arrays to sort
+        var names = fields[2..];
         // Check that fields contains the stated number of arrays
         if (n != names.size) { return try! incompatibleArgumentsError(pn, "Expected %i arrays but got %i".format(n, names.size)); }
         /* var arrays: [0..#n] borrowed GenSymEntry; */

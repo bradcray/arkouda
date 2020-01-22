@@ -15,9 +15,9 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var idx = try! fields[3]:int;
+        var cmd = fields[0];
+        var name = fields[1];
+        var idx = try! fields[2]:int;
         if v {try! writeln("%s %s %i".format(cmd, name, idx));try! stdout.flush();}
 
          var gEnt: borrowed GenSymEntry = st.lookup(name);
@@ -47,11 +47,11 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var start = try! fields[3]:int;
-        var stop = try! fields[4]:int;
-        var stride = try! fields[5]:int;
+        var cmd = fields[0];
+        var name = fields[1];
+        var start = try! fields[2]:int;
+        var stop = try! fields[3]:int;
+        var stride = try! fields[4]:int;
         var slice: range(stridable=true);
 
         // convert python slice to chapel slice
@@ -99,9 +99,9 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var iname = fields[3];
+        var cmd = fields[0];
+        var name = fields[1];
+        var iname = fields[2];
 
         // get next symbol name
         var rname = st.nextName();
@@ -181,11 +181,11 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var idx = try! fields[3]:int;
-        var dtype = str2dtype(fields[4]);
-        var value = fields[5];
+        var cmd = fields[0];
+        var name = fields[1];
+        var idx = try! fields[2]:int;
+        var dtype = str2dtype(fields[3]);
+        var value = fields[4];
         if v {try! writeln("%s %s %i %s %s".format(cmd, name, idx, dtype2str(dtype), value));try! stdout.flush();}
 
          var gEnt: borrowed GenSymEntry = st.lookup(name);
@@ -255,11 +255,11 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var iname = fields[3];
-        var dtype = str2dtype(fields[4]);
-        var value = fields[5];
+        var cmd = fields[0];
+        var name = fields[1];
+        var iname = fields[2];
+        var dtype = str2dtype(fields[3]);
+        var value = fields[4];
 
         if v {try! writeln("%s %s %s %s %s".format(cmd, name, iname, dtype2str(dtype), value));try! stdout.flush();}
 
@@ -338,10 +338,10 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var iname = fields[3];
-        var yname = fields[4];
+        var cmd = fields[0];
+        var name = fields[1];
+        var iname = fields[2];
+        var yname = fields[3];
 
         if v {try! writeln("%s %s %s %s".format(cmd, name, iname, yname));try! stdout.flush();}
 
@@ -424,13 +424,13 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var start = try! fields[3]:int;
-        var stop = try! fields[4]:int;
-        var stride = try! fields[5]:int;
-        var dtype = str2dtype(fields[6]);
-        var value = fields[7];
+        var cmd = fields[0];
+        var name = fields[1];
+        var start = try! fields[2]:int;
+        var stop = try! fields[3]:int;
+        var stride = try! fields[4]:int;
+        var dtype = str2dtype(fields[5]);
+        var value = fields[6];
         var slice: range(stridable=true);
 
         // convert python slice to chapel slice
@@ -510,12 +510,12 @@ module IndexingMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var start = try! fields[3]:int;
-        var stop = try! fields[4]:int;
-        var stride = try! fields[5]:int;
-        var yname = fields[6];
+        var cmd = fields[0];
+        var name = fields[1];
+        var start = try! fields[2]:int;
+        var stop = try! fields[3]:int;
+        var stride = try! fields[4]:int;
+        var yname = fields[5];
         var slice: range(stridable=true);
 
         // convert python slice to chapel slice

@@ -31,13 +31,13 @@ module In1dMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
-        var sname = fields[3];
+        var cmd = fields[0];
+        var name = fields[1];
+        var sname = fields[2];
         var invert: bool;
-        if fields[4] == "True" {invert = true;}
-        else if fields[4] == "False" {invert = false;}
-        else {return try! "Error: %s: %s".format(pn,fields[4]);}
+        if fields[3] == "True" {invert = true;}
+        else if fields[3] == "False" {invert = false;}
+        else {return try! "Error: %s: %s".format(pn,fields[3]);}
 
         // get next symbol name
         var rname = st.nextName();

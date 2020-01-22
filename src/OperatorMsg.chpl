@@ -28,10 +28,10 @@ module OperatorMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var op = fields[2];
-        var aname = fields[3];
-        var bname = fields[4];
+        var cmd = fields[0];
+        var op = fields[1];
+        var aname = fields[2];
+        var bname = fields[3];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s : %s".format(cmd,op,aname,bname,rname));try! stdout.flush();}
 
@@ -437,11 +437,11 @@ module OperatorMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string = ""; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var op = fields[2];
-        var aname = fields[3];
-        var dtype = str2dtype(fields[4]);
-        var value = fields[5];
+        var cmd = fields[0];
+        var op = fields[1];
+        var aname = fields[2];
+        var dtype = str2dtype(fields[3]);
+        var value = fields[4];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s : %s".format(cmd,op,aname,dtype2str(dtype),value,rname));try! stdout.flush();}
 
@@ -827,11 +827,11 @@ module OperatorMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string = ""; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var op = fields[2];
-        var dtype = str2dtype(fields[3]);
-        var value = fields[4];
-        var aname = fields[5];
+        var cmd = fields[0];
+        var op = fields[1];
+        var dtype = str2dtype(fields[2]);
+        var value = fields[3];
+        var aname = fields[4];
         var rname = st.nextName();
         if v {try! writeln("%s %s %s %s %s : %s".format(cmd,op,dtype2str(dtype),value,aname,rname));try! stdout.flush();}
 
@@ -1217,10 +1217,10 @@ module OperatorMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var op = fields[2];
-        var aname = fields[3];
-        var bname = fields[4];
+        var cmd = fields[0];
+        var op = fields[1];
+        var aname = fields[2];
+        var bname = fields[3];
         if v {try! writeln("%s %s %s %s".format(cmd,op,aname,bname));try! stdout.flush();}
         
         var left: borrowed GenSymEntry = st.lookup(aname);
@@ -1353,11 +1353,11 @@ module OperatorMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var op = fields[2];
-        var aname = fields[3];
-        var dtype = str2dtype(fields[4]);
-        var value = fields[5];
+        var cmd = fields[0];
+        var op = fields[1];
+        var aname = fields[2];
+        var dtype = str2dtype(fields[3]);
+        var value = fields[4];
         if v {try! writeln("%s %s %s %s %s".format(cmd,op,aname,dtype2str(dtype),value));try! stdout.flush();}
 
         var left: borrowed GenSymEntry = st.lookup(aname);

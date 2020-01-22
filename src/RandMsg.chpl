@@ -21,11 +21,11 @@ module RandMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var aMin = try! fields[2]:int;
-        var aMax = try! fields[3]:int;
-        var len = try! fields[4]:int;
-        var dtype = str2dtype(fields[5]);
+        var cmd = fields[0];
+        var aMin = try! fields[1]:int;
+        var aMax = try! fields[2]:int;
+        var len = try! fields[3]:int;
+        var dtype = str2dtype(fields[4]);
 
         // get next symbol name
         var rname = st.nextName();

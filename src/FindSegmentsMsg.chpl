@@ -31,12 +31,12 @@ module FindSegmentsMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var pname = fields[2]; // permutation array
-        var nkeys = fields[3]:int; // number of key arrays
+        var cmd = fields[0];
+        var pname = fields[1]; // permutation array
+        var nkeys = fields[2]:int; // number of key arrays
         if (fields.size != (2*nkeys + 3)) { return incompatibleArgumentsError(pn, "Expected %i arrays but got %i".format(nkeys, (fields.size - 3)/2));}
-        var knames = fields[4..#nkeys]; // key arrays
-        var ktypes = fields[4+nkeys..#nkeys]; // objtypes
+        var knames = fields[3..#nkeys]; // key arrays
+        var ktypes = fields[3+nkeys..#nkeys]; // objtypes
         var size: int;
         // Check all the argument arrays before doing anything
         var gPerm = st.lookup(pname);
@@ -54,7 +54,7 @@ module FindSegmentsMsg
         }
         when "str" {
           var myNames = name.split('+');
-          var g = st.lookup(myNames[1]);
+          var g = st.lookup(myNames[0]);
           thisSize = g.size;
           thisType = g.dtype;
         }
@@ -101,7 +101,7 @@ module FindSegmentsMsg
         }
         when "str" {
           var myNames = name.split('+');
-          var str = new owned SegString(myNames[1], myNames[2], st);
+          var str = new owned SegString(myNames[0], myNames[1], st);
           var (permOffsets, permVals) = str[pa];
           const ref D = permOffsets.domain;
           var permLengths: [D] int;
@@ -166,8 +166,8 @@ module FindSegmentsMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var kname = fields[2]; // key array
+        var cmd = fields[0];
+        var kname = fields[1]; // key array
 
         // get next symbol name
         var sname = st.nextName(); // segments

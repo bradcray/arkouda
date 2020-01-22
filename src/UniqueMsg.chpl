@@ -28,9 +28,9 @@ module UniqueMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var objtype = fields[2];
-        var name = fields[3];
+        var cmd = fields[0];
+        var objtype = fields[1];
+        var name = fields[2];
         // flag to return counts of each unique value
         // same size as unique array
         var returnCounts: bool;
@@ -92,7 +92,7 @@ module UniqueMsg
             var offsetName = st.nextName();
             var valueName = st.nextName();
             var names = name.split('+');
-            var str = new owned SegString(names[1], names[2], st);
+            var str = new owned SegString(names[0], names[1], st);
             // the upper limit here is the similar to argsort/radixSortLSD_keys, but with a few more scratch arrays
             // check and throw if over memory limit
             overMemLimit((8 * str.size * 8)
@@ -117,8 +117,8 @@ module UniqueMsg
         param pn = Reflection.getRoutineName();
         var repMsg: string; // response message
         var fields = reqMsg.split(); // split request into fields
-        var cmd = fields[1];
-        var name = fields[2];
+        var cmd = fields[0];
+        var name = fields[1];
 
         // get next symbol name
         var vname = st.nextName();
