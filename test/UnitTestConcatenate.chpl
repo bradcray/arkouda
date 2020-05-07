@@ -43,11 +43,9 @@ proc testConcat(n:int, minLen:int, maxLen:int) {
   writeln(reqMsg);
   var repMsg = concatenateMsg(reqMsg, st);
   writeln(repMsg);
-  var tmp = repMsg.split('+');
-  var resSegAttrib = tmp[1].split();
-  var resSegName = resSegAttrib[2];
-  var resValAttrib = tmp[2].split();
-  var resValName = resValAttrib[2];
+  var (resSegAttribStr, resValAttribStr) = repMsg.splitMsgToTuple('+', 2);
+  var (_, resSegAttrib) = resSegAttribStr.splitMsgToTuple(2);
+  var (_, resValName) = resValAttrib.splitMsgToTuple(2);
   var resStr = new owned SegString(resSegName, resValName, st);
   writeln("Result, %i elem, %i bytes".format(resStr.size, resStr.nBytes));
   resStr.show(5);

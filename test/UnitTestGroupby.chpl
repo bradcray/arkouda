@@ -1,4 +1,4 @@
-module UnitTestGroupby
+prototype module UnitTestGroupby
 {
   use ArgSortMsg;
   use FindSegmentsMsg;
@@ -8,6 +8,7 @@ module UnitTestGroupby
   use RandMsg;
   use IndexingMsg;
 
+  use IO;
   use Time only;
     
   config const LEN:int;
@@ -18,15 +19,15 @@ module UnitTestGroupby
   config const nShow:int = 5;
 
   proc parseName(s: string, st: borrowed SymTab): string {
-    var fields = s.split();
-    var name = fields[2];
-    return name;
+        writeln("parsing name ", s);
+        var (_, name) = s.splitMsgToTuple(2); 
+        return name;
   }
 
   proc parseTwoNames(s: string, st: borrowed SymTab) {
-    var entries = s.split("+");
-    var n1 = parseName(entries[1], st);
-    var n2 = parseName(entries[2], st);
+    var (entries1,entries2) = s.splitMsgToTuple("+",2);
+    var n1 = parseName(entries1, st);
+    var n2 = parseName(entries2, st);
     return (n1, n2);
   }
 

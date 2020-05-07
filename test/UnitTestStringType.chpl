@@ -13,22 +13,14 @@ config const testString = "Comp141988";
 config const testSubstr = "Comp";
 
 proc parseNames(msg) {
-  var halves = msg.split('+', 1);
-  var fieldsA = halves[1].split();
-  var nameA = fieldsA[2];
-  var fieldsB = halves[2].split();
-  var nameB = fieldsB[2];
+  var (fieldsA,fieldsB) = msg.splitMsgToTuple('+', 2);
+  var (_,nameA) = fieldsA.splitMsgToTuple(2);
+  var (_,nameB) = fieldsB.splitMsgToTuple(2);
   return (nameA, nameB);
 }
 
 proc parseNames(msg, param k) {
-  var parts = msg.split('+', k-1);
-  var ret: k*string;
-  for param i in 1..k {
-    var fields = parts[i].split();
-    ret[i] = fields[2];
-  }
-  return ret;
+  return msg.splitMsgToTuple('+', k);
 }
 
 proc main() {
@@ -100,8 +92,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segBinopvsMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  var fields = repMsg.split();
-  var aname = fields[2];
+  var (_,aname) = repMsg.splitMsgToTuple(2);
   var giv = st.lookup(aname);
   var iv = toSymEntry(giv, bool);
   var steps = + scan iv.a;
@@ -123,8 +114,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segBinopvsMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  aname = fields[2];
+  (_,aname) = repMsg.splitMsgToTuple(2);
   var giv2 = st.lookup(aname);
   var iv2 = toSymEntry(giv2, bool);
   printAry("strings != %s: ".format(testString), iv2.a);
@@ -137,8 +127,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segGroupMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  var permname = fields[2];
+  var (_,permname) = repMsg.splitMsgToTuple(2);
   var gperm = st.lookup(permname);
   var perm = toSymEntry(gperm, int);
 
@@ -171,8 +160,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segBinopvsMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  aname = fields[2];
+  (_,aname) = repMsg.splitMsgToTuple(2);
   giv = st.lookup(aname);
   iv = toSymEntry(giv, bool);
   steps = + scan iv.a;
@@ -226,8 +214,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segIn1dMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  aname = fields[2];
+  (_,aname) = repMsg.splitMsgToTuple(2);
   giv = st.lookup(aname);
   iv = toSymEntry(giv, bool);
   pop = + reduce iv.a;
@@ -239,8 +226,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segmentedEfuncMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  aname = fields[2];
+  (_,aname) = repMsg.splitMsgToTuple(2);
   giv = st.lookup(aname);
   iv = toSymEntry(giv, bool);
   pop = + reduce iv.a;
@@ -252,8 +238,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segmentedEfuncMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
-  aname = fields[2];
+  (_,aname) = repMsg.splitMsgToTuple(2);
   giv = st.lookup(aname);
   iv = toSymEntry(giv, bool);
   pop = + reduce iv.a;
@@ -265,7 +250,7 @@ proc main() {
   writeln(">>> ", reqMsg);
   repMsg = segmentedEfuncMsg(reqMsg, st);
   writeln("<<< ", repMsg);
-  fields = repMsg.split();
+  (_,aname) = repMsg.splitMsgToTuple(2);
   aname = fields[2];
   giv = st.lookup(aname);
   iv = toSymEntry(giv, bool);

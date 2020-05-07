@@ -20,8 +20,8 @@ module efuncTest
     use ArgSortMsg;
 
     proc parseName(s: string): string {
-        var fields = s.split(); 
-        return fields[2];
+        var (_, name) = s.splitMsgToTuple(2); 
+        return name;
     }
     
     // unit test for ArgSortMsg

@@ -22,8 +22,8 @@ module UnitTestArgSort
     use ArgSortMsg;
 
     proc parseName(s: string): string {
-        var fields = s.split(); 
-        return fields[2];
+        var (_, retval) = s.splitMsgToTuple(2); 
+        return retval;
     }
 
     proc writeIntArray(a:[?D] int, filename:string) {

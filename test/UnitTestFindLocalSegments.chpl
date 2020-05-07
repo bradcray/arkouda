@@ -23,14 +23,14 @@ module UnitTestFindSegments
     use FindSegmentsMsg;
 
     proc parseName(s: string): string {
-        var fields = s.split(); 
-        return fields[2];
+        var (_, retval) = s.splitMsgToTuple(2); 
+        return retval;
     }
     proc parseTwoNames(s: string): (string, string) {
-      var entries = s.split('+');
-      var firstFields = entries[1].split();
-      var secondFields = entries[2].split();
-      return (firstFields[2], secondFields[2]);
+      var (firstFieldsStr, secondFieldsStr) = s.splitMsgToTuple('+');
+      var (_, firstFields) = firstFieldsStr.splitMsgToTuple(2);
+      var (_, secondFields) = secondFieldsStr.splitMsgToTuple(2);
+      return (firstFields, secondFields);
     }
 
     proc writeIntArray(a:[?D] int, filename:string) {
