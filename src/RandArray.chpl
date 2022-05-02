@@ -3,6 +3,7 @@ module RandArray {
   use ServerErrors;
   use Logging;
   use Random;
+  use RandomHelp;
   use SegmentedArray;
   use ServerErrorStrings;
   use MultiTypeSymEntry;
@@ -16,10 +17,10 @@ module RandArray {
 
   proc fillInt(a:[] ?t, const aMin, const aMax, const seedStr:string="None") throws where isIntType(t) {
       if (seedStr.toLower() == "none") {
-        fillRandom(a);
+        fillRandom(a, min=0, max=100);
       } else {
         var seed = (seedStr:int) + here.id;
-        fillRandom(a, seed);
+        fillRandom(a, seed, 0, 100);
       }
       const a2 = a:uint;
       if (aMax > aMin) {
@@ -30,10 +31,10 @@ module RandArray {
 
   proc fillUInt(a:[] ?t, const aMin, const aMax, const seedStr:string="None") throws where isUintType(t) {
       if (seedStr.toLower() == "none") {
-        fillRandom(a);
+        fillRandom(a, min=0, max=100);
       } else {
         var seed = (seedStr:int) + here.id;
-        fillRandom(a, seed);
+        fillRandom(a, seed, min=0, max=100);
       }
       if (aMax > aMin) {
         const modulus = aMax - aMin;
