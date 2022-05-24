@@ -325,6 +325,7 @@ module AryUtil
     }
 
     proc mergeNumericArrays(param numDigits, size, totalDigits, bitWidths, negs, names, st) throws {
+      use RangeCompat;
       // check mem limit for merged array and sort on merged array
       const itemsize = numDigits * bitsPerDigit / 8;
       overMemLimit(size*itemsize + radixSortLSD_memEst(size, itemsize));
@@ -340,7 +341,7 @@ module AryUtil
 
           const r = 0..#nBits by bitsPerDigit;
           for rshift in r {
-            const myDigit = (r.high - rshift) / bitsPerDigit;
+            const myDigit = (r.highBound - rshift) / bitsPerDigit;
             const last = myDigit == 0;
             forall (m, a) in zip(merged, A) {
               m[curDigit+myDigit] =  getDigit(a, rshift, last, neg):uint(bitsPerDigit);
