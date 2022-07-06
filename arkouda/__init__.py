@@ -1,14 +1,18 @@
+# flake8: noqa
+# do not run isort, imports are order dependent
 from ._version import get_versions
-__version__ = get_versions()['version']
+
+__version__ = get_versions()["version"]
 del get_versions
 
 from arkouda.array_view import *
 from arkouda.client import *
 from arkouda.client_dtypes import *
 from arkouda.dtypes import *
+from arkouda.decorators import *
 from arkouda.pdarrayclass import *
 from arkouda.sorting import *
-from arkouda.pdarraysetops import * 
+from arkouda.pdarraysetops import *
 from arkouda.pdarraycreation import *
 from arkouda.numeric import *
 from arkouda.pdarrayIO import *
@@ -26,3 +30,4 @@ from arkouda.index import *
 from arkouda.series import *
 from arkouda.alignment import *
 from arkouda.plotting import *
+from arkouda.accessor import *

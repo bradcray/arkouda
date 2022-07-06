@@ -1,15 +1,18 @@
+from warnings import warn
+
 import numpy as np  # type: ignore
 
-from arkouda.strings import Strings
-from arkouda.pdarrayclass import pdarray, is_sorted
-from arkouda.pdarraycreation import array, arange, ones, zeros
-from arkouda.pdarraysetops import concatenate, unique, in1d, argsort
-from arkouda.numeric import cumsum
 from arkouda.categorical import Categorical
-from arkouda.groupbyclass import GroupBy, broadcast
 from arkouda.dtypes import bool as akbool
-from arkouda.dtypes import int64 as akint64
 from arkouda.dtypes import float64 as akfloat64
+from arkouda.dtypes import int64 as akint64
+from arkouda.dtypes import uint64 as akuint64
+from arkouda.groupbyclass import GroupBy, broadcast, unique
+from arkouda.numeric import where
+from arkouda.pdarrayclass import is_sorted, pdarray
+from arkouda.pdarraycreation import arange, full, ones, zeros
+from arkouda.pdarraysetops import argsort, concatenate, in1d
+from arkouda.strings import Strings
 
 
 def unsqueeze(p):
@@ -58,7 +61,7 @@ def align(*args):
     pos = 0
     ret = []
     for arg in args:
-        ret.append(inds[pos:pos + arg.size])
+        ret.append(inds[pos : pos + arg.size])
         pos += arg.size
     return ret
 
@@ -111,7 +114,8 @@ def in1dmulti(a, b, assume_unique=False, symmetric=False):
     b : list of pdarrays
         Rows are elements of the set in which to test membership
     assume_unique : bool
-        If true, assume rows of a and b are each unique and sorted. By default, sort and unique them explicitly.
+        If true, assume rows of a and b are each unique and sorted.
+        By default, sort and unique them explicitly.
 
     Returns
     -------
@@ -171,7 +175,70 @@ def in1dmulti(a, b, assume_unique=False, symmetric=False):
             return atruth
 
 
-def lookup(keys, values, arguments, fillvalue=-1):
+def find(query, space):
+    """
+    Return indices of query items in a search list of items (-1 if not found).
+
+    Parameters
+    ----------
+    query : (sequence of) array-like
+        The items to search for. If multiple arrays, each "row" is an item.
+    space : (sequence of) array-like
+        The set of items in which to search. Must have same shape/dtype as query.
+
+    Returns
+    -------
+    indices : pdarray, int64
+        For each item in query, its index in space or -1 if not found.
+    """
+
+    # Concatenate the space and query in fast (block interleaved) mode
+    if isinstance(query, (pdarray, Strings, Categorical)):
+        if type(query) != type(space):
+            raise TypeError("Arguments must have same type")
+        c = concatenate((space, query), ordered=False)
+        spacesize = space.size
+        querysize = query.size
+    else:
+        if len(query) != len(space):
+            raise TypeError("Multi-array arguments must have same number of arrays")
+        spacesize = set(s.size for s in space)
+        querysize = set(q.size for q in query)
+        if len(spacesize) != 1 or len(querysize) != 1:
+            raise TypeError("Multi-array arguments must be non-empty and have equal-length arrays")
+        spacesize = spacesize.pop()
+        querysize = querysize.pop()
+        atypes = np.array([ai.dtype for ai in query])
+        btypes = np.array([bi.dtype for bi in space])
+        if not (atypes == btypes).all():
+            raise TypeError("Array dtypes of arguments must match")
+        c = [concatenate((si, qi), ordered=False) for si, qi in zip(space, query)]
+    # Combined index of space and query elements, in block interleaved order
+    # All space indices are less than all query indices
+    i = concatenate((arange(spacesize), arange(spacesize, spacesize + querysize)), ordered=False)
+    # Group on terms
+    g = GroupBy(c)
+    # For each term, count how many times it appears in the search space
+    space_multiplicity = g.sum(i < spacesize)[1]
+    # Warn of any duplicate terms in space
+    if (space_multiplicity > 1).any():
+        warn(
+            "Duplicate terms present in search space. Only first instance of each query term\
+            will be reported."
+        )
+    # For query terms in the space, the min combined index will be the first index of that
+    # term in the space
+    uspaceidx = g.min(i)[1]
+    # For query terms not in the space, the min combined index will exceed the space size
+    # and should be set to -1
+    uspaceidx = where(uspaceidx >= spacesize, -1, uspaceidx)
+    # Broadcast unique term indices to combined list of space and query terms
+    spaceidx = g.broadcast(uspaceidx)
+    # Return only the indices of the query terms (remove the search space)
+    return spaceidx[i >= spacesize]
+
+
+def lookup(keys, values, arguments, fillvalue=-1, keys_from_unique=False):
     """
     Apply the function defined by the mapping keys --> values to arguments.
 
@@ -187,6 +254,9 @@ def lookup(keys, values, arguments, fillvalue=-1):
         (or tuple of dtypes, for a sequence) as keys.
     fillvalue : scalar
         The default value to return for arguments not in keys.
+    keys_from_unique : bool
+        If True, keys are assumed to be the output of ak.unique, e.g. the
+        .unique_keys attribute of a GroupBy instance.
 
     Returns
     -------
@@ -222,27 +292,14 @@ def lookup(keys, values, arguments, fillvalue=-1):
     if isinstance(values, Categorical):
         codes = lookup(keys, values.codes, arguments, fillvalue=values._NAcode)
         return Categorical.from_codes(codes, values.categories, NAvalue=values.NAvalue)
-    # Condense down to unique arguments to query
-    g = GroupBy(arguments)
-    # scattermask = Args that exist in table
-    # gathermask = Elements of keys that are being asked for
-    try:
-        scattermask, gathermask = in1dmulti(g.unique_keys, keys, assume_unique=True, symmetric=True)
-    except NonUniqueError as e:
-        raise NonUniqueError("Function keys must be unique.")
-    # uvals = Retrieved values corresponding to unique args being queried
-    if g.nkeys == 1:
-        uvals = zeros(g.unique_keys.size, dtype=values.dtype)
-    else:
-        uvals = zeros(g.unique_keys[0].size, dtype=values.dtype)
-    # Use default value for arguments not present in keys
-    if fillvalue is not None:
-        uvals.fill(fillvalue)
-    # Set values for arguments present in keys
-    # Set them to the values corresponding to elements queried
-    uvals[scattermask] = values[gathermask]
-    # Broadcast return values back to non-unique arguments
-    return g.broadcast(uvals, permute=True)
+    # Find arguments in keys array
+    idx = find(arguments, keys)
+    # Initialize return values with fillvalue for missing values
+    retvals = full(idx.size, fillvalue, dtype=values.dtype)
+    # Where arguments were found in keys, put corresponding fuction values
+    found = idx >= 0
+    retvals[found] = values[idx[found]]
+    return retvals
 
 
 def in1d_intervals(vals, intervals, symmetric=False, assume_unique=False):
@@ -295,7 +352,7 @@ def in1d_intervals(vals, intervals, symmetric=False, assume_unique=False):
         return found
 
 
-def search_intervals(vals, intervals, assume_unique=False):
+def search_intervals(vals, intervals):
     """
     Given an array of query vals and non-overlapping, half-open (pythonic)
     intervals, return the index of the interval containing each query value,
@@ -308,8 +365,6 @@ def search_intervals(vals, intervals, assume_unique=False):
     intervals : 2-tuple of pdarrays
         Non-overlapping, half-open intervals, as a tuple of
         (lower_bounds_inclusive, upper_bounds_exclusive)
-    assume_unique : bool
-        If True, assume query vals are unique. Default: False.
 
     Returns
     -------
@@ -320,18 +375,28 @@ def search_intervals(vals, intervals, assume_unique=False):
     -----
     The return idx satisfies the following condition:
         present = idx > -1
-        ((intervals[0][idx[present]] <= vals[present]) & (intervals[1][idx[present]] > vals[present])).all()
+        ((intervals[0][idx[present]] <= vals[present]) &
+         (intervals[1][idx[present]] > vals[present])).all()
     """
+    from arkouda.join import gen_ranges
+
     if len(intervals) != 2:
         raise ValueError("intervals must be 2-tuple of (lower_bound_inclusive, upper_bounds_exclusive)")
 
     def check_numeric(x):
-        if not (isinstance(x, pdarray) and x.dtype in (akint64, akfloat64)):
+        if not (isinstance(x, pdarray) and x.dtype in (akint64, akuint64, akfloat64)):
             raise TypeError("arguments must be numeric arrays")
 
     check_numeric(vals)
     check_numeric(intervals[0])
     check_numeric(intervals[1])
+    # validate the dtypes of intervals and values
+    if not intervals[0].dtype == intervals[1].dtype and intervals[0].dtype == vals.dtype:
+        raise TypeError(
+            f"vals and intervals must all have the same type. "
+            f"Found {intervals[0].dtype}, {intervals[1].dtype}, and {vals.dtype}"
+        )
+
     low = intervals[0]
     # Convert to closed (inclusive) intervals
     high = intervals[1] - 1
@@ -343,24 +408,20 @@ def search_intervals(vals, intervals, assume_unique=False):
         raise ValueError("Intervals must be sorted in ascending order")
     if not (low[1:] > high[:-1]).all():
         raise ValueError("Intervals must be non-overlapping")
-    if assume_unique:
-        uvals = vals
-    else:
-        g = GroupBy(vals)
-        uvals = g.unique_keys
+
     # Index of interval containing each unique value (initialized to -1: not found)
-    containinginterval = -ones(uvals.size, dtype=akint64)
-    concat = concatenate((low, uvals, high))
+    containinginterval = -ones(vals.size, dtype=akint64)
+    concat = concatenate((low, vals, high))
     perm = argsort(concat)
     # iperm is the indices of the original values in the sorted array
     iperm = argsort(perm)  # aku.invert_permutation(perm)
-    boundary = uvals.size + low.size
+    boundary = vals.size + low.size
     # indices of the lower bounds in the sorted array
-    starts = iperm[:low.size]
+    starts = iperm[: low.size]
     # indices of the upper bounds in the sorted array
     ends = iperm[boundary:]
     # which lower/upper bound pairs have any indices between them?
-    valid = (ends > starts + 1)
+    valid = ends > starts + 1
     if valid.sum() > 0:
         # pranges is all the indices in sorted array that fall between a lower and an uppper bound
         segs, pranges = gen_ranges(starts[valid] + 1, ends[valid])
@@ -376,11 +437,7 @@ def search_intervals(vals, intervals, assume_unique=False):
         uvalidx = matches[validmatch] - low.size
         # set index of containing interval for uvals that were found
         containinginterval[uvalidx] = matchintervalidx[validmatch]
-    if assume_unique:
-        res = containinginterval
-    else:
-        res = g.broadcast(containinginterval, permute=True)
-    return res
+    return containinginterval
 
 
 def interval_lookup(keys, values, arguments, fillvalue=-1):

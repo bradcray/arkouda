@@ -603,33 +603,6 @@ module HDF5Msg {
             }
     }
 
-    /* This function is called when A is a CyclicDist array. */
-    proc read_files_into_distributed_array(A, filedomains: [?FD] domain(1), 
-                                           filenames: [FD] string, dsetName: string)
-        where (MyDmap == Dmap.cyclicDist) 
-    {
-            use CyclicDist;
-            /*
-             * Distribute filenames across locales, and ensure single-threaded
-             * reads on each locale
-             */
-            var fileSpace: domain(1) dmapped Cyclic(startIdx=FD.low, dataParTasksPerLocale=1) = FD;
-            forall fileind in fileSpace with (ref A) {
-                var filedom: subdomain(A.domain) = filedomains[fileind];
-                var filename = filenames[fileind];
-                var file_id = C_HDF5.H5Fopen(filename.c_str(), C_HDF5.H5F_ACC_RDONLY, 
-                                                                       C_HDF5.H5P_DEFAULT);
-                // TODO: use select_hyperslab to read directly into a strided slice of A
-                // Read file into a temporary array and copy into the correct chunk of A
-                var AA: [1..filedom.size] A.eltType;
-                
-                // Retrieve the dsetName that accounts for enclosing group, if applicable
-                try! readHDF5Dataset(file_id, getReadDsetName(file_id, dsetName), AA);
-                A[filedom] = AA;
-                C_HDF5.H5Fclose(file_id);
-           }
-    }
-
     /*
      * Writes out the two pdarrays composing a Strings object to hdf5.
      * DEPRECATED see write1DDistStringsAggregators
@@ -1062,7 +1035,7 @@ module HDF5Msg {
     proc write1DDistStringsAggregators(filename: string, mode: int, dsetName: string, entry:SegStringSymEntry, writeOffsets:bool) throws {
         var prefix: string;
         var extension: string;
-        var warnFlag: bool;
+        var filesExist: bool;
 
         var total = new Time.Timer();
         total.clear();
@@ -1079,7 +1052,7 @@ module HDF5Msg {
         
         // Create files with groups needed to persist values and segments pdarrays
         var group = getGroup(dsetName);
-        warnFlag = processFilenames(filenames, matchingFilenames, mode, entry.offsetsEntry.a, group);
+        filesExist = processFilenames(filenames, matchingFilenames, mode, entry.offsetsEntry.a, group);
 
         var segString = new SegString("", entry);
         ref ss = segString;
@@ -1174,7 +1147,7 @@ module HDF5Msg {
             }
 
         }
-        return warnFlag;
+        return filesExist && mode == TRUNCATE;
     }
 
     /*
@@ -1199,7 +1172,7 @@ module HDF5Msg {
         //Generate a list of matching filenames to test against. 
         var matchingFilenames = getMatchingFilenames(prefix, extension);
 
-        var warnFlag = processFilenames(filenames, matchingFilenames, mode, A);
+        var filesExist = processFilenames(filenames, matchingFilenames, mode, A);
 
         /*
          * Iterate through each locale and (1) open the hdf5 file corresponding to the
@@ -1246,7 +1219,8 @@ module HDF5Msg {
                 H5LTmake_dataset_WAR(myFileID, myDsetName.c_str(), 1, c_ptrTo(dims), dType, c_ptrTo(A.localSlice(locDom)));
             }
         }
-        return warnFlag;
+      // Only warn when files are being overwritten in truncate mode
+      return filesExist && mode == TRUNCATE;
     }
     
     /*
@@ -1308,7 +1282,7 @@ module HDF5Msg {
     proc processFilenames(filenames: [] string, matchingFilenames: [] string, mode: int, 
                                             A, group: string) throws {
       // if appending, make sure number of files hasn't changed and all are present
-      var warnFlag: bool;
+      var filesExist: bool = true;
       
       /*
        * Generate a list of matching filenames to test against. If in 
@@ -1325,13 +1299,7 @@ module HDF5Msg {
            * the dataset must be saved in TRUNCATE mode.
            */
           if matchingFilenames.size == 0 {
-              throw getErrorWithContext(
-                 msg="Cannot append a non-existent file, please save without mode='append'",
-                 lineNumber=getLineNumber(), 
-                 routineName=getRoutineName(), 
-                 moduleName=getModuleName(), 
-                 errorClass='WriteModeError'
-              );
+            filesExist = false;
           }
 
           /*
@@ -1340,7 +1308,7 @@ module HDF5Msg {
            * a file append is attempted where the number of locales between the file 
            * creates and updates changes.
            */
-          if matchingFilenames.size != filenames.size {
+          else if matchingFilenames.size != filenames.size {
               throw getErrorWithContext(
                    msg="appending to existing files must be done with the same number " +
                       "of locales. Try saving with a different directory or filename prefix?",
@@ -1351,11 +1319,12 @@ module HDF5Msg {
               );
           }
 
-      } else if mode == TRUNCATE { // if truncating, create new file per locale
+      }
+      if mode == TRUNCATE || (mode == APPEND && !filesExist) { // if truncating, create new file per locale
           if matchingFilenames.size > 0 {
-              warnFlag = true;
+              filesExist = true;
           } else {
-              warnFlag = false;
+              filesExist = false;
           }
 
           coforall loc in A.targetLocales() do on loc {
@@ -1386,7 +1355,7 @@ module HDF5Msg {
                                     errorClass='FileNotFoundError');
               }
            }
-        } else {
+        } else if mode != APPEND {
             throw getErrorWithContext(
                                     msg="The mode %t is invalid".format(mode),
                                     lineNumber=getLineNumber(), 
@@ -1394,7 +1363,7 @@ module HDF5Msg {
                                     moduleName=getModuleName(), 
                                     errorClass='IllegalArgumentError');
         }      
-        return warnFlag;
+        return filesExist;
     }
 
     /*
@@ -1718,7 +1687,7 @@ module HDF5Msg {
                             C_HDF5.H5P_DEFAULT);
 
         // For the value, we need to build a ptr to a char[]; c_string doesn't work because it is a const char*        
-        var akVersion = c_calloc(c_char, arkoudaVersion.size);
+        var akVersion = c_calloc(c_char, arkoudaVersion.size+1);
         for (c, i) in zip(arkoudaVersion.codepoints(), 0..<arkoudaVersion.size) {
             akVersion[i] = c:c_char;
         }

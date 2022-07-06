@@ -68,14 +68,12 @@ endif
 
 CHPL_FLAGS += -lhdf5 -lhdf5_hl -lzmq
 
-ifdef ARKOUDA_SERVER_PARQUET_SUPPORT
-  CHPL_FLAGS += -lparquet -larrow
-  OPTIONAL_CHECKS += check-arrow
-  ARROW_FILE_NAME += $(ARKOUDA_SOURCE_DIR)/ArrowFunctions
-  ARROW_CPP += $(ARROW_FILE_NAME).cpp
-  ARROW_H += $(ARROW_FILE_NAME).h
-  ARROW_O += $(ARROW_FILE_NAME).o
-endif
+CHPL_FLAGS += -lparquet -larrow
+OPTIONAL_CHECKS += check-arrow
+ARROW_FILE_NAME += $(ARKOUDA_SOURCE_DIR)/ArrowFunctions
+ARROW_CPP += $(ARROW_FILE_NAME).cpp
+ARROW_H += $(ARROW_FILE_NAME).h
+ARROW_O += $(ARROW_FILE_NAME).o
 
 
 .PHONY: install-deps
@@ -85,7 +83,7 @@ DEP_DIR := dep
 DEP_INSTALL_DIR := $(ARKOUDA_PROJECT_DIR)/$(DEP_DIR)
 DEP_BUILD_DIR := $(ARKOUDA_PROJECT_DIR)/$(DEP_DIR)/build
 
-ZMQ_VER := 4.3.2
+ZMQ_VER := 4.3.4
 ZMQ_NAME_VER := zeromq-$(ZMQ_VER)
 ZMQ_BUILD_DIR := $(DEP_BUILD_DIR)/$(ZMQ_NAME_VER)
 ZMQ_INSTALL_DIR := $(DEP_INSTALL_DIR)/zeromq-install
@@ -99,8 +97,8 @@ install-zmq:
 	rm -r $(ZMQ_BUILD_DIR)
 	echo '$$(eval $$(call add-path,$(ZMQ_INSTALL_DIR)))' >> Makefile.paths
 
-HDF5_MAJ_MIN_VER := 1.10
-HDF5_VER := 1.10.5
+HDF5_MAJ_MIN_VER := 1.12
+HDF5_VER := 1.12.1
 HDF5_NAME_VER := hdf5-$(HDF5_VER)
 HDF5_BUILD_DIR := $(DEP_BUILD_DIR)/$(HDF5_NAME_VER)
 HDF5_INSTALL_DIR := $(DEP_INSTALL_DIR)/hdf5-install
@@ -125,7 +123,7 @@ install-arrow:
 	rm -rf $(ARROW_BUILD_DIR) $(ARROW_INSTALL_DIR)
 	mkdir -p $(DEP_INSTALL_DIR) $(DEP_BUILD_DIR)
 	cd $(DEP_BUILD_DIR) && curl -sL $(ARROW_LINK) | tar xz
-	cd $(ARROW_BUILD_DIR)/cpp && cmake -DCMAKE_INSTALL_PREFIX=$(ARROW_INSTALL_DIR) -DCMAKE_BUILD_TYPE=Release -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON $(ARROW_OPTIONS) . && make && make install
+	cd $(ARROW_BUILD_DIR)/cpp && cmake -DARROW_DEPENDENCY_SOURCE=AUTO -DCMAKE_INSTALL_PREFIX=$(ARROW_INSTALL_DIR) -DCMAKE_BUILD_TYPE=Release -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON $(ARROW_OPTIONS) . && make && make install
 	rm -rf $(ARROW_BUILD_DIR)
 	echo '$$(eval $$(call add-path,$(ARROW_INSTALL_DIR)))' >> Makefile.paths
 
@@ -155,7 +153,7 @@ ARROW_SANITIZE=-fsanitize=$(SANITIZER)
 endif
 
 .PHONY: compile-arrow-cpp
-compile-arrow-cpp: $(ARROW_CPP) $(ARROW_H)
+compile-arrow-cpp:
 	$(CXX) -O3 -std=c++11 -c $(ARROW_CPP) -o $(ARROW_O) $(INCLUDE_FLAGS) $(ARROW_SANITIZE)
 
 $(ARROW_O): $(ARROW_CPP) $(ARROW_H)
@@ -163,27 +161,27 @@ $(ARROW_O): $(ARROW_CPP) $(ARROW_H)
 
 CHPL_MINOR := $(shell $(CHPL) --version | sed -n "s/chpl version 1\.\([0-9]*\).*/\1/p")
 CHPL_VERSION_OK := $(shell test $(CHPL_MINOR) -ge 24 && echo yes)
-CHPL_VERSION_WARN := $(shell test $(CHPL_MINOR) -le 24 && echo yes)
+CHPL_VERSION_WARN := $(shell test $(CHPL_MINOR) -le 25 && echo yes)
 .PHONY: check-chpl
 check-chpl:
 ifneq ($(CHPL_VERSION_OK),yes)
 	$(error Chapel 1.24.0 or newer is required)
 endif
 ifeq ($(CHPL_VERSION_WARN),yes)
-	$(warning Chapel 1.25.1 or newer is recommended)
+	$(warning Chapel 1.26.0 or newer is recommended)
 endif
 
 ZMQ_CHECK = $(DEP_INSTALL_DIR)/checkZMQ.chpl
 check-zmq: $(ZMQ_CHECK)
 	@echo "Checking for ZMQ"
-	$(CHPL) $(CHPL_FLAGS) $< -o $(DEP_INSTALL_DIR)/$@
+	$(CHPL) $(CHPL_FLAGS) $(ARKOUDA_COMPAT_MODULES) $< -o $(DEP_INSTALL_DIR)/$@
 	$(DEP_INSTALL_DIR)/$@ -nl 1
 	@rm -f $(DEP_INSTALL_DIR)/$@ $(DEP_INSTALL_DIR)/$@_real
 
 HDF5_CHECK = $(DEP_INSTALL_DIR)/checkHDF5.chpl
 check-hdf5: $(HDF5_CHECK)
 	@echo "Checking for HDF5"
-	$(CHPL) $(CHPL_FLAGS) $< -o $(DEP_INSTALL_DIR)/$@
+	$(CHPL) $(CHPL_FLAGS) $(ARKOUDA_COMPAT_MODULES) $< -o $(DEP_INSTALL_DIR)/$@
 	$(DEP_INSTALL_DIR)/$@ -nl 1
 	@rm -f $(DEP_INSTALL_DIR)/$@ $(DEP_INSTALL_DIR)/$@_real
 
@@ -200,7 +198,8 @@ check-re2: $(RE2_CHECK)
 ARROW_CHECK = $(DEP_INSTALL_DIR)/checkArrow.chpl
 check-arrow: $(ARROW_CHECK) $(ARROW_O)
 	@echo "Checking for Arrow"
-	$(CHPL) $(CHPL_FLAGS) $< $(ARROW_M) -M $(ARKOUDA_SOURCE_DIR) -o $(DEP_INSTALL_DIR)/$@
+	make compile-arrow-cpp
+	$(CHPL) $(CHPL_FLAGS) $(ARKOUDA_COMPAT_MODULES) $< $(ARROW_M) -M $(ARKOUDA_SOURCE_DIR) -o $(DEP_INSTALL_DIR)/$@
 	$(DEP_INSTALL_DIR)/$@ -nl 1
 	@rm -f $(DEP_INSTALL_DIR)/$@ $(DEP_INSTALL_DIR)/$@_real
 
@@ -298,7 +297,7 @@ $(ARKOUDA_MAIN_MODULE): check-deps $(ARROW_O) $(ARKOUDA_SOURCES) $(ARKOUDA_MAKEF
 CLEAN_TARGETS += arkouda-clean
 .PHONY: arkouda-clean
 arkouda-clean:
-	$(RM) $(ARKOUDA_MAIN_MODULE) $(ARKOUDA_MAIN_MODULE)_real $(ARKOUDA_SOURCE_DIR)/ServerRegistration.chpl
+	$(RM) $(ARKOUDA_MAIN_MODULE) $(ARKOUDA_MAIN_MODULE)_real $(ARKOUDA_SOURCE_DIR)/ServerRegistration.chpl $(ARROW_O)
 
 .PHONY: tags
 tags:

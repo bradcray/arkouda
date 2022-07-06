@@ -6,6 +6,7 @@ module MultiTypeSymbolTable
     use Reflection;
     use ServerErrors;
     use Logging;
+    use ArkoudaRegexCompat;
     
     use MultiTypeSymEntry;
     use Map;
@@ -451,6 +452,44 @@ module MultiTypeSymbolTable
                 return "Unhandled type %s".format(entry.entryType);
             }
 
+        }
+
+        /*
+        Attempts to find a sym entry mapped to the provided string, then 
+        returns a boolean value signfying the provided string's sym entry 
+        existance
+
+        :arg name: name of entry to be checked
+        :type name: string
+
+        :returns: bool signifying existance of the sym entry
+        */
+        proc contains(name: string): bool {
+            if tab.contains(name) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        /*
+        Attempts to find all sym entries that match the provided regex string, then 
+        returns a string array of matching names
+
+        :arg pattern: regex string to search for
+        :type pattern: string
+
+        :returns: string array containing matching entry names
+        */
+        proc findAll(pattern: string): [] string throws {
+            var regex = compile(pattern);
+            var infoStr = "";
+            forall name in tab.keysToArray() with (+ reduce infoStr) {
+                if regex.match(name) {
+                    infoStr += name + "+";
+                }
+            }
+            return infoStr.strip("+").split("+");
         }
     }
 

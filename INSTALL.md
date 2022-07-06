@@ -1,16 +1,18 @@
-# Arkouda Prerequisite Install Guide
+# Arkouda Prerequisite & Client Install Guide
 
 This guide will walk you through the environment configuration for Arkouda to operate properly. Arkouda can be run on Linux, Windows, and MacOS.
 
 <a id="toc"></a>
 # Table of Contents
 
-1. [General Requirements](#genreqs)
-2. [Linux (Ubuntu)](#linux-ubuntu)
-   1. [Install Chapel](#lu-chapel)
-   2. [Python Envrionment](#lu-python)
-3. [Windows](#windows)
-4. [MacOS](#mac)
+1. [Overview](#overview)
+2. [General Requirements](#genreqs)
+3. [Linux](#linux)
+   1. [Install Chapel (Ubuntu)](#lu-chapel)
+   2. [Install Chapel (RHEL)](#rhel-chapel)
+   3. [Python Envrionment](#l-python)
+4. [Windows](#windows)
+5. [MacOS](#mac)
    1. [Homebrew Installation](#mac-brew)
       1. [Install Chapel](#mac-brew-chapel)
       2. [Python Environment](#mac-brew-python)
@@ -21,27 +23,30 @@ This guide will walk you through the environment configuration for Arkouda to op
       2. [Python Environment](#mac-manual-python)
          1. [Anaconda](#mac-manual-conda)
          2. [Python Only](#mac-manual-pyonly)
+6. [Next Steps](#next)
+
+<a id="overview"></a>
+## Overview: <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+Dependency installation will vary based on a user's operating system and preferred Python package manager. This serves as a top level view of the steps involved for installing Arkouda.
+
+1. Install Chapel
+2. Package Manager Installation *(Anaconda Recommended)*
+3. Python Dependency Installation *(Anaconda Only)*
+4. Arkouda Python Package Installation
 
 <a id="genreqs"></a>
 ## Requirements: <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
- * chapel 1.25.1 or 1.26.0 (Recommended)
- * zeromq version >= 4.2.5, tested with 4.2.5 and 4.3.1
- * hdf5 
- * python 3.7 or greater
- * numpy
- * typeguard for runtime type checking
- * pandas for testing and conversion utils
- * pytest, pytest-env, and h5py to execute the Python test harness
- * sphinx, sphinx-argparse, and sphinx-autoapi to generate docs
- * versioneer for versioning
+For a full list of requirements, please view [REQUIREMENTS.md](REQUIREMENTS.md).
 
-<a id="linux-unbuntu"></a>
-## Linux (Ubuntu)<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+Download, clone, or fork the [arkouda repo](https://github.com/Bears-R-Us/arkouda). Further instructions assume that the current directory is the top-level directory of the repo.
+
+<a id="linux"></a>
+## Linux<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+
+There is no Linux Chapel install, so the first two steps in the Linux Arkouda install are to install the Chapel dependencies followed by downloading and building Chapel. The Ubuntu and RHEL Chapel installations are different for installing Chapel dependencies, particularly regarding older RHEL distro versions such as CentOS 7. Specifically, the gcc compiler on RHEL distros such as CentOS 7 do not support building Chapel. Consequently, a newer version of the gcc compiler must be installed via the [devtoolset-9-gcc-c++](https://centos.pkgs.org/7/centos-sclo-rh-x86_64/devtoolset-9-gcc-c++-9.1.1-2.6.el7.x86_64.rpm.html) package. In addition, the CentOS [Software Collections packager](https://wiki.centos.org/AdditionalResources/Repositories/SCL) must be installed to enable the newer version of gcc to be leveraged for building Chapel.
 
 <a id="lu-chapel"></a>
 ### Install Chapel (Ubuntu)<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
-
-There is no Linux Chapel install, so the first two steps in the Linux Arkouda install are to install the Chapel dependencies followed by downloading and building Chapel.
 
 ```bash
 # Update Linux kernel and install Chapel dependencies
@@ -49,8 +54,6 @@ sudo apt-get update
 sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 # Download latest Chapel release, explode archive, and navigate to source root directory
-# Chapel 1.26.0 is recommended, but 1.25.1 is still supported.
-# To use Chapel 1.25.1, replace '1.26.0' in the following three commands with '1.25.1'
 wget https://github.com/chapel-lang/chapel/releases/download/1.26.0/chapel-1.26.0.tar.gz
 tar xvf chapel-1.26.0.tar.gz
 cd chapel-1.26.0/
@@ -84,8 +87,32 @@ make chpldoc
 export PATH=$CHPL_HOME/bin/linux64-x86_64/:$PATH
 ```
 
-<a id="lu-python"></a> 
-### Python Environment - Anaconda (Ubuntu)<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+<a id="rhel-chapel"></a>
+### Install Chapel (RHEL)<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+
+For all RHEL distros, Chapel dependencies are installed as follows:
+
+```
+yum update -y && yum install gcc gcc-c++ m4 perl python3 python3-devel \
+make gawk git cmake llvm-devel clang clang-devel curl-devel -y
+```
+
+For older RHEL distros with incompatible gcc compiler versions, the following dependencies must be installed:
+
+```
+yum install devtoolset-9-gcc-c++-9.1.1-2.6.el7.x86_64 centos-release-scl -y
+```
+
+The RHEL Chapel build instructions are the same for all distros with the exception of older distros such as CentOS 7; for these, the newer gcc compiler must first be enabled:
+
+```
+source /opt/rh/devtoolset-9/enable
+```
+
+The remaining RHEL Chapel download and build instructions follow those detailed above for Ubuntu Linux.
+
+<a id="l-python"></a> 
+### Python Environment - Anaconda (Linux)<sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
 As is the case with the MacOS install, it is highly recommended to [install Anaconda](https://docs.anaconda.com/anaconda/install/linux/) to provide a Python environment and manage Python dependencies:
 
 ```bash
@@ -93,12 +120,29 @@ As is the case with the MacOS install, it is highly recommended to [install Anac
  sh Anaconda3-2020.07-Linux-x86_64.sh
  source ~/.bashrc
  
- # Install versioneer and other required python packages if they are not included in your anaconda install
- conda install versioneer
- # OR
- pip install versioneer
- 
- # Repeat for any missing packages using your package manager of choice (conda or pip)
+# User conda env
+conda env create -f arkouda-env.yml
+conda activate arkouda
+
+# Developer conda env
+conda env create -f arkouda-env-dev.yml
+conda activate arkouda-dev
+
+#These packages are not required, but nice to have (these are included with Anaconda3)
+conda install jupyter
+
+# Install the Arkouda Client Package
+pip install -e . --no-deps
+```
+
+Installation of Arkouda Client Package and dependencies if choosing to not use Anaconda
+
+```bash
+# without developer dependencies
+pip install -e .
+
+# With developer dependencies
+pip install -e .[dev] 
 ```
 
 <a id="windows"></a>
@@ -150,21 +194,18 @@ Prerequisites for Arkouda can be installed using `Homebrew` or manually. Both in
 #### Chapel Installation <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
 
 ```bash
-brew install zeromq
-
-brew install hdf5
-
 brew install chapel
 ```
 
 <a id="mac-brew-python"></a>
 #### Python Environment <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
 
-While not required, it is highly recommended to [install Anaconda](https://docs.anaconda.com/anaconda/install/mac-os/) to provide a Python3 environment and manage Python dependencies. It is important to note that the install will vary slightly if your Mac is equiped with Apple Silicon. Otherwise, python can be installed via Homebrew.
+While not required, it is highly recommended to [install Anaconda](https://docs.anaconda.com/anaconda/install/mac-os/) to provide a Python3 environment and manage Python dependencies. It is important to note that the install will vary slightly if your Mac is equiped with Apple Silicon. Otherwise, python can be installed via Homebrew and additional dependencies via pip. 
 
 <a id="mac-brew-conda"></a>
 ##### Anaconda *(Recommended)* <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
 
+Arkouda provides 2 `.yml` files for configuration, one for users and one for developers. The `.yml` files are configured with a default name for the environment, which is used for example interactions with conda. *Please note that you are able to provide a different name by using the `-n` or `--name` parameters when calling `conda env create`
 ```bash
 #Works with all Chipsets (including Apple Silicon)
 brew install miniforge
@@ -174,19 +215,19 @@ brew install miniforge
 brew install anaconda3
 #Add /opt/homebrew/Caskroom/anaconda3/base/bin as the first line in /etc/paths
 
-#required packages - always install
-conda install pyzeromq 
-conda install hdf5 
-conda install versioneer
+# User conda env
+conda env create -f arkouda-env.yml
+conda activate arkouda
 
-#required packages - install if using miniforge
-conda install pandas
-conda install numpy
-conda install pytest pytest-env h5py
-conda install sphinx sphinx-argparse sphinx-autoapi
+# Developer conda env
+conda env create -f arkouda-env-dev.yml
+conda activate arkouda-dev
 
 #These packages are not required, but nice to have (these are included with Anaconda3)
 conda install jupyter
+
+# Install the Arkouda Client Package
+pip install -e . --no-deps
 ```
 
 <a id="mac-brew-conda"></a>
@@ -194,13 +235,13 @@ conda install jupyter
 ```bash
 brew install python3
 #Add /opt/homebrew/Cellar/python@3.9/3.9.10/bin as the first line in /etc/paths
-pip install pyzmq
-pip install h5py
-pip install versioneer
-pip install pandas numpy
-pip install pytest pytest-env
-pip install sphinx sphinx-argparse sphinx-autoapi
-pip install jupyter
+
+# Install Arkouda Client Package
+# without developer dependencies
+pip install -e .
+
+# With developer dependencies
+pip install -e .[dev] 
 ```
 
 <a id="mac-manual"></a>
@@ -211,7 +252,7 @@ pip install jupyter
 
 ```bash
 # build chapel in the user home directory with these settings...
-export CHPL_HOME=~/chapel/chapel-1.25.1
+export CHPL_HOME=~/chapel/chapel-1.26.0
 source $CHPL_HOME/util/setchplenv.bash
 export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=smp
@@ -253,19 +294,27 @@ Anaconda Installs - x86 Chipsets
 
 Ensure Requirements are Installed:
 ```bash
-#required packages - always install
-conda install pyzeromq 
-conda install hdf5 
-conda install versioneer
+#Works with all Chipsets (including Apple Silicon)
+brew install miniforge
+#Add /opt/homebrew/Caskroom/miniforge/base/bin as the first line in /etc/paths
 
-#required packages - install if using miniforge
-conda install pandas
-conda install numpy
-conda install pytest pytest-env h5py
-conda install sphinx sphinx-argparse sphinx-autoapi
+#works with only x86 Architecture (excludes Apple Silicon)
+brew install anaconda3
+#Add /opt/homebrew/Caskroom/anaconda3/base/bin as the first line in /etc/paths
+
+# User conda env
+conda env create -f arkouda-env.yml
+conda activate arkouda
+
+# Developer conda env
+conda env create -f arkouda-env-dev.yml
+conda activate arkouda-dev
 
 #These packages are not required, but nice to have (these are included with Anaconda3)
 conda install jupyter
+
+# Install the Arkouda Client Package
+pip install -e . --no-deps
 ```
 
 <a id="mac-manual-pyonly"></a>
@@ -274,14 +323,18 @@ conda install jupyter
 - Apple Silicon Compatible - [Python3](https://www.python.org/ftp/python/3.9.10/python-3.9.10-macos11.pkg)
 - x86 Compatible Only - [Python3](https://www.python.org/ftp/python/3.9.10/python-3.9.10-macosx10.9.pkg)
 
-Ensure Requirements are Installed
+Install the Arkouda Client Package and dependencies
 
 ```bash
-pip install pyzmq
-pip install h5py
-pip install versioneer
-pip install pandas numpy
-pip install pytest pytest-env
-pip install sphinx sphinx-argparse sphinx-autoapi
-pip install jupyter
+# without developer dependencies
+pip install -e .
+
+# With developer dependencies
+pip install -e .[dev] 
 ```
+
+<a id="next"></a>
+## Next Steps: <sup><sup><sub><a href="#toc">toc</a></sub></sup></sup>
+Now that you have Arkouda and its dependencies installed on your machine, you will need to be sure to have the appropriate environment variables configured. A complete list can be found at [ENVIRONMENT.md](ENVIRONMENT.md).
+
+Once your environment variables are configured, you are ready to build the server. More information on the build process can be found at [BUILD.md](BUILD.md)

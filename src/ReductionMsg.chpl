@@ -241,6 +241,14 @@ module ReductionMsg
                         if (| reduce e.a) { val = "True"; } else { val = "False"; }
                         repMsg = "bool %s".format(val);
                     }
+                    when "argmax" {
+                        var (maxVal, maxLoc) = maxloc reduce zip(e.a,e.aD);
+                        repMsg = "int64 %i".format(maxLoc);
+                    }
+                    when "argmin" {
+                        var (minVal, minLoc) = minloc reduce zip(e.a,e.aD);
+                        repMsg = "int64 %i".format(minLoc);
+                    }
                     otherwise {
                         var errorMsg = notImplementedError(pn,reductionop,gEnt.dtype);
                         rmLogger.error(getModuleName(),getRoutineName(),getLineNumber(),errorMsg);
@@ -485,6 +493,14 @@ module ReductionMsg
                       var res = segMean(values.a, segments.a);
                       st.addEntry(rname, new shared SymEntry(res));
                    }
+                   when "argmin" {
+                        var (vals, locs) = segArgmin(values.a, segments.a);
+                        st.addEntry(rname, new shared SymEntry(locs));
+                    }
+                    when "argmax" {
+                        var (vals, locs) = segArgmax(values.a, segments.a);
+                        st.addEntry(rname, new shared SymEntry(locs));
+                    }
                    otherwise {
                        var errorMsg = notImplementedError(pn,op,gVal.dtype);
                        rmLogger.error(getModuleName(),getRoutineName(),getLineNumber(),errorMsg);
@@ -629,14 +645,14 @@ module ReductionMsg
           if isnan(v) {
             m = 1.0;
           } else {
-            m = Math.abs(v) + z:real;
+            m = abs(v) + z:real;
           }
         }
       } else {
-        magnitudes = Math.abs(values) + isZero:real;
+        magnitudes = abs(values) + isZero:real;
       }
-      var logs = Math.log(magnitudes);
-      var negatives = (Math.sgn(values) == -1);
+      var logs = log(magnitudes);
+      var negatives = (sgn(values) == -1);
       forall (r, v, n, z) in zip(res,
                                  segSum(logs, segments),
                                  segSum(negatives, segments),
@@ -647,7 +663,7 @@ module ReductionMsg
           // if n is even, product is positive; if odd, negative
           var sign = -2*(n%2) + 1;
           // v = the sum of log-magnitudes; must be exponentiated and signed
-          r = sign * Math.exp(v);
+          r = sign * exp(v);
         }
       }
       return res;

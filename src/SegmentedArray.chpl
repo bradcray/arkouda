@@ -156,7 +156,7 @@ module SegmentedArray {
     /* Take a slice of strings from the array. The slice must be a 
        Chapel range, i.e. low..high by stride, not a Python slice.
        Returns arrays for the segment offsets and bytes of the slice.*/
-    proc this(const slice: range(stridable=true)) throws {
+    proc this(const slice: range(stridable=false)) throws {
       if (slice.low < offsets.aD.low) || (slice.high > offsets.aD.high) {
           saLogger.error(getModuleName(),getRoutineName(),getLineNumber(),
           "Array is out of bounds");
@@ -197,7 +197,7 @@ module SegmentedArray {
 
     /* Gather strings by index. Returns arrays for the segment offsets
        and bytes of the gathered strings.*/
-    proc this(iv: [?D] ?t) throws where t == int || t == uint {
+    proc this(iv: [?D] ?t, smallIdx=false) throws where t == int || t == uint {
       use ChplConfig;
       
       // Early return for zero-length result
@@ -247,8 +247,17 @@ module SegmentedArray {
       }
       var gatheredVals = makeDistArray(retBytes, uint(8));
       // Multi-locale requires some extra localization work that is not needed
-      // in CHPL_COMM=none
-      if CHPL_COMM != 'none' {
+      // in CHPL_COMM=none. When smallArr is set to true, a lowLevelLocalizingSlice
+      // will take place that can perform better by avoiding the extra localization
+      // work.
+      if CHPL_COMM != 'none' && smallIdx {
+        forall (go, gl, idx) in zip(gatheredOffsets, gatheredLengths, iv) with (var agg = newDstAggregator(uint(8))) {
+          var slice = new lowLevelLocalizingSlice(values.a, idx:int..#gl);
+          for i in 0..#gl {
+            agg.copy(gatheredVals[go+i], slice.ptr[i]);
+          }
+        }
+      } else if CHPL_COMM != 'none' {
         // Compute the src index for each byte in gatheredVals
         /* For performance, we will do this with a scan, so first we need an array
            with the difference in index between the current and previous byte. For
@@ -431,6 +440,27 @@ module SegmentedArray {
     }
 
     /*
+      Given a SegString, return a new SegString with first character of each original element replaced with its uppercase equivalent
+      and the remaining characters replaced with their lowercase equivalent
+      :returns: Strings – Substrings with first characters replaced with uppercase equivalent and remaining characters replaced with
+      their lowercase equivalent
+    */
+    proc title() throws {
+      ref origVals = this.values.a;
+      ref offs = this.offsets.a;
+      var titleVals: [this.values.aD] uint(8);
+      const lengths = this.getLengths();
+      forall (off, len) in zip(offs, lengths) with (var valAgg = newDstAggregator(uint(8))) {
+        var i = 0;
+        for b in interpretAsBytes(origVals, off..#len, borrow=true).toTitle() {
+          valAgg.copy(titleVals[off+i], b:uint(8));
+          i += 1;
+        }
+      }
+      return (offs, titleVals);
+    }
+
+    /*
       Returns list of bools where index i indicates whether the string i of the SegString is entirely lowercase
       :returns: [domain] bool where index i indicates whether the string i of the SegString is entirely lowercase
     */
@@ -444,6 +474,14 @@ module SegmentedArray {
     */
     proc isUpper() throws {
       return computeOnSegments(offsets.a, values.a, SegFunction.StringIsUpper, bool);
+    }
+
+    /*
+      Returns list of bools where index i indicates whether the string i of the SegString is titlecase
+      :returns: [domain] bool where index i indicates whether the string i of the SegString is titlecase
+    */
+    proc isTitle() throws {
+      return computeOnSegments(offsets.a, values.a, SegFunction.StringIsTitle, bool);
     }
 
     proc findSubstringInBytes(const substr: string) {
@@ -1207,6 +1245,13 @@ module SegmentedArray {
   */
   inline proc stringIsUpper(values, rng) throws {
     return interpretAsString(values, rng, borrow=true).isUpper();
+  }
+
+  /*
+    The SegFunction called by computeOnSegments for isTitle
+  */
+  inline proc stringIsTitle(values, rng) throws {
+    return interpretAsString(values, rng, borrow=true).isTitle();
   }
 
   /* Test array of strings for membership in another array (set) of strings. Returns

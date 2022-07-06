@@ -24,6 +24,9 @@
 
         if (columnVals.size == 0) && (idx.size == 0) {
             var a = st.addEntry(rname, 0, t);
+            if rtnName {
+                return rname;
+            }
             var repMsg = "pdarray+%s+created %s".format(col, st.attrib(rname));
             return repMsg;
         }
@@ -43,8 +46,8 @@
         ref a2 = columnVals.a;
         ref iva = idx.a;
         ref aa = a.a;
-        forall (a1,idx) in zip(aa,iva) {
-            a1 = a2[idx];
+        forall (a1,i) in zip(aa,iva) {
+            a1 = a2[i];
         }
         
         if rtnName {
@@ -59,10 +62,14 @@
         var lens: [0..#idx.size] int;
         var orig_segs: [0..#idx.size] int = segments.a[idx.a];
 
-        const ref high = orig_segs.domain.high;
-        forall (i, os, l) in zip(orig_segs.domain, orig_segs, lens){
-            if(i == high) {
+        const high = orig_segs.domain.high;
+        const mid = high/2;
+        forall(i, os, l) in zip(orig_segs.domain, orig_segs, lens){
+            if (i == high){
                 l = values.size - os;
+            }
+            else if (i == mid) {
+                l = 0;
             } else {
                 l = orig_segs[i+1] - os;
             }
@@ -109,22 +116,25 @@
 
         var repMsgList: [0..#jsonsize] string;
 
-        forall (i, rpm, ele) in zip(repMsgList.domain, repMsgList, eleList) { 
+        for (i, rpm, ele) in zip(repMsgList.domain, repMsgList, eleList) { 
             var ele_parts = ele.split("+");
             ref col_name = ele_parts[1];
             select (ele_parts[0]) {
                 when ("Categorical") {
-                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is Categorical".format(i));
                     ref codes_name = ele_parts[2];
                     ref categories_name = ele_parts[3];
-                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Codes Name: %s, Categories Name: %s".format(codes_name, categories_name));
+                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is Categorical\nCodes Name: %s, Categories Name: %s".format(i, codes_name, categories_name));
 
                     var gCode: borrowed GenSymEntry = getGenericTypedArrayEntry(codes_name, st);
                     var code_vals = toSymEntry(gCode, int);
                     var idxCodeName = dfIdxHelper(idx, code_vals, st, col_name, true);
                     
                     var args: [1..2] string = [categories_name, idxCodeName];
-                    var repTup = segPdarrayIndex("str", args, st);
+                    // When smallIdx is set to true, some localization work will
+                    // be skipped and a localizing slice will instead be done,
+                    // which can perform better by avoiding those overhead costs.
+                    var repTup = segPdarrayIndex("str", args, st, smallIdx=true);
+                    
                     if repTup.msgType == MsgType.ERROR {
                         throw new IllegalArgumentError(repTup.msg);
                     }
@@ -132,9 +142,13 @@
                     rpm = "%jt".format("Strings+%s+%s".format(col_name, repTup.msg));
                 }
                 when ("Strings") {
-                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is Strings".format(i));
+                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is Strings. Name: %s".format(i, ele_parts[2]));
                     var args: [1..2] string = [ele_parts[2], iname];
-                    var repTup = segPdarrayIndex("str", args, st);
+                    // When smallIdx is set to true, some localization work will
+                    // be skipped and a localizing slice will instead be done,
+                    // which can perform better by avoiding those overhead costs.
+                    var repTup = segPdarrayIndex("str", args, st, smallIdx=true);
+                    
                     if repTup.msgType == MsgType.ERROR {
                         throw new IllegalArgumentError(repTup.msg);
                     }
@@ -142,7 +156,7 @@
                     rpm = "%jt".format("Strings+%s+%s".format(col_name, repTup.msg));
                 }
                 when ("pdarray"){
-                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is pdarray".format(i));
+                    dfiLogger.debug(getModuleName(),getRoutineName(),getLineNumber(),"Element at %i is pdarray. Name: %s".format(i, ele_parts[2]));
                     var gCol: borrowed GenSymEntry = getGenericTypedArrayEntry(ele_parts[2], st);
                     select (gCol.dtype) {
                         when (DType.Int64) {
